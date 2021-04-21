@@ -72,7 +72,7 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
         // pre invest state
         uint preReserveDaiBalance = dai.balanceOf(RESERVE);
         uint preMakerDebt = clerk.debt();
-       
+
        // get admin super powers
        root.relyContract(POOL_ADMIN, self);
        // whitelist self for tin & drop
@@ -82,7 +82,7 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
 
         // get super powers on DAI contract
        hevm.store(DAI, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
-       
+
        // mint DAI
        uint maxInvest = (assessor.maxReserve() - assessor.totalBalance()) / 2; // make sure investment amount does not brek max reserve
        dai.mint(self, maxInvest);
@@ -94,15 +94,15 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
        dai.approve(SENIOR_TRANCHE, seniorInvest); // invest senior
        senior.supplyOrder(seniorInvest);
 
-       dai.approve(JUNIOR_TRANCHE, juniorInvest); // invest junior 
+       dai.approve(JUNIOR_TRANCHE, juniorInvest); // invest junior
        junior.supplyOrder(juniorInvest);
-    
+
        // close epoch & disburse
        hevm.warp(now + coordinator.challengeTime());
        coordinator.closeEpoch();
        senior.disburse();
        junior.disburse();
-  
+
        // calc expected token balances for tin & drop
        uint tinPrice = assessor.calcJuniorTokenPrice(nav.approximatedNAV(), 0);
        uint dropPrice = assessor.calcSeniorTokenPrice(nav.approximatedNAV(), 0);
@@ -115,8 +115,8 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
 
        uint wipeAmount = assertMakerDebtReduced(preMakerDebt, maxInvest); // calc wipe amount for maker
        uint reserveIncrease = maxInvest - wipeAmount; // calc reserve increase
-       assertEqWithTolarence(assessor.totalBalance(), preReserveDaiBalance + reserveIncrease); // check reserve balance increased correctly 
-       assertEqWithTolarence(preMakerDebt - wipeAmount, clerk.debt()); // check maker debt reduced correctly 
+       assertEqWithTolarence(assessor.totalBalance(), preReserveDaiBalance + reserveIncrease); // check reserve balance increased correctly
+       assertEqWithTolarence(preMakerDebt - wipeAmount, clerk.debt()); // check maker debt reduced correctly
     }
 
     function testLoanCycle() public {
@@ -146,23 +146,23 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
         // get loan ceiling
         uint ceiling = (nav.ceiling(loanId));
         emit log_named_uint("ceiling", ceiling);
-        // borrow
-        shelf.borrow(loanId, ceiling);
-        // withdraw
-        shelf.withdraw(loanId, ceiling, self);
-
-        // assert currency received
-        assertEq(dai.balanceOf(self), preDaiBalance + ceiling);
-
-        // warp
-        // hevm.warp(now + 5 days);
-        // uint debt = pile.debt(loanId);
-        // dai.mint(debt, self);
-        // uint preReserveBalance = dai.balanceOf(self);
-        // approve currency
-        // shelf.repay(loanId, debt);
-        // assert reserve increase
-        // assert maker repaid
+//        // borrow
+//        shelf.borrow(loanId, ceiling);
+//        // withdraw
+//        shelf.withdraw(loanId, ceiling, self);
+//
+//        // assert currency received
+//        assertEq(dai.balanceOf(self), preDaiBalance + ceiling);
+//
+//        // warp
+//        // hevm.warp(now + 5 days);
+//        // uint debt = pile.debt(loanId);
+//        // dai.mint(debt, self);
+//        // uint preReserveBalance = dai.balanceOf(self);
+//        // approve currency
+//        // shelf.repay(loanId, debt);
+//        // assert reserve increase
+//        // assert maker repaid
 
     }
 

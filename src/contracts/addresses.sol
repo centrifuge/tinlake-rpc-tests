@@ -1,7 +1,8 @@
 
-pragma solidity >=0.5.12 <0.6.0;
+pragma solidity >=0.5.15 <0.6.0;
 
 contract TinlakeAddresses {
+
 address public constant ROOT = 0xc5BfCcBe24b037459922F70ADA6706638A550338; 
 address public constant DAI = 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa; 
 address public constant TITLE = 0x3C8ECc6Ff39cA4b38e622e70a34A2C4C147939ce; 
@@ -18,11 +19,11 @@ address public constant SENIOR_TOKEN = 0x28F56bce6Cdd708EB173Fc3763Ee62dEbd3674F
 address public constant JUNIOR_MEMBERLIST = 0x20104E5E0aD78245cfa258217F857dd00Ab43b65; 
 address public constant SENIOR_MEMBERLIST = 0xBBfBde40aF416e6A112fAAc887eA19e602cE3999; 
 address public constant ASSESSOR = 0x1E5Dca2f19d9546dBb235122cB8f756Ca2B865B7; 
-address public constant POOL_ADMIN = 0xD8A9fDDF542BF19D5117528055370EE1519DDBF6; 
+address public constant ASSESSOR_ADMIN = 0xBFe498D0a0232cE605a04be741791da2aF14E9f3; 
 address public constant COORDINATOR = 0xDDC63365BA58659c62c028426A5fD0eBFA3332ed; 
 address public constant RESERVE = 0x0537bac749D428E4c01BceA7102D83C758449AC1; 
-address public constant CLERK =  0xC5f97053d1AB35245E6BBC7B1769b3088cd28e14; 
+address public constant CLERK = 0xC5f97053d1AB35245E6BBC7B1769b3088cd28e14; 
 address public constant MGR = 0x2CfADbd094a4D650049C53832B15842a3c59Db34; 
-address public constant REGISTRY = 0xaC0c1EF395290288028A0a9FDFc8FDebEbE54a24;
-}
+address public constant POOL_ADMIN = 0xD8A9fDDF542BF19D5117528055370EE1519DDBF6; 
 
+}
