@@ -59,7 +59,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
         // todo fetch current block timestamp from chain
         // 21. April 2020
-        hevm.warp(1618991883);
+        hevm.warp(1618991883 + 2 days);
     }
 
     function investTranches() public {
@@ -123,65 +123,83 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // check maker debt reduced correctly
     }
 
-    function testLoanCycleWithMaker() public {
-        investTranches();
-        uint preDaiBalance = dai.balanceOf(self);
 
-        // issue nft
-        uint tokenId = registry.issue(self);
+    function appraiseNFT(uint tokenId, uint nftPrice, uint maturityDate) public {
+        root.relyContract(FEED, self);
+        bytes32 nftId = keccak256(abi.encodePacked(address(registry), tokenId));
+        nav.update(nftId, nftPrice, 0);
+        nav.file("maturityDate", nftId, maturityDate);
+    }
 
-        // issue loan
-        uint loanId = shelf.issue(address(registry), tokenId);
-
-        // raise creditline
-        uint raiseAmount = 100 ether;
+    function raiseCreditLine(uint raiseAmount) public {
         uint preCreditline = clerk.creditline();
         root.relyContract(CLERK, self);
         clerk.raise(raiseAmount);
         assertEq(clerk.creditline(), safeAdd(preCreditline, raiseAmount));
+    }
 
-        // appraise nft
-        root.relyContract(FEED, self);
-        bytes32 nftId = keccak256(abi.encodePacked(address(registry), tokenId));
-        uint totalAvailable = assessor.totalBalance();
-        emit log_named_uint("balance", totalAvailable);
-        emit log_named_uint("available", reserve.currencyAvailable());
-        uint nftPrice = totalAvailable * 2;
-        emit log_named_uint("price", nftPrice);
-        nav.update(nftId, nftPrice, 0);
-        nav.file("maturityDate", nftId, now + 2 weeks);
-
-        // lock asset nft
-        registry.setApprovalForAll(SHELF, true);
-        shelf.lock(loanId);
-        // get loan ceiling
-        uint ceiling = (nav.ceiling(loanId));
-        emit log_named_uint("ceiling", ceiling);
-
-        // borrow loan with half of the creditline
-        uint borrowAmount = reserve.totalBalance() + clerk.creditline() / 2;
-        uint preMakerDebt = clerk.debt();
+    function borrowLoan(uint loanId, uint borrowAmount) public {
+        uint preDaiBalance = dai.balanceOf(self);
         // borrow
         shelf.borrow(loanId, borrowAmount);
         // withdraw
         shelf.withdraw(loanId, borrowAmount, self);
         // assert currency received
         assertEq(dai.balanceOf(self), preDaiBalance + borrowAmount);
+    }
+
+    function repayLoan(uint loanId, uint repayAmount) public {
+        dai.mint(self, repayAmount);
+        dai.approve(SHELF, uint(- 1));
+        uint preReserveBalance = dai.balanceOf(self);
+        uint preDaiBalance = dai.balanceOf(self);
+        // repay debt
+        shelf.repay(loanId, repayAmount);
+        // assert currency paid
+        assertEq(dai.balanceOf(self), preDaiBalance - repayAmount);
+    }
+
+    function testLoanCycleWithMaker() public {
+        investTranches();
+
+        // issue nft
+        uint tokenId = registry.issue(self);
+        // issue loan
+        uint loanId = shelf.issue(address(registry), tokenId);
+
+        // raise creditline
+        uint raiseAmount = 100 ether;
+        raiseCreditLine(raiseAmount);
+
+        // appraise nft
+        uint totalAvailable = assessor.totalBalance();
+        uint nftPrice = totalAvailable * 2;
+        uint maturityDate = now + 2 weeks;
+        appraiseNFT(tokenId, nftPrice, maturityDate);
+
+        // lock asset nft
+        registry.setApprovalForAll(SHELF, true);
+        shelf.lock(loanId);
+        // get loan ceiling
+        uint ceiling = (nav.ceiling(loanId));
+
+        // borrow loan with half of the creditline
+        uint borrowAmount = reserve.totalBalance() + clerk.creditline() / 2;
+        uint preMakerDebt = clerk.debt();
+
+        borrowLoan(loanId, borrowAmount);
 
         // check debt increase in maker
         assertEqTol(clerk.debt(), preMakerDebt + (clerk.creditline() / 2) ,"clerk debt");
 
-        // repay loan
+        // jump 5 days into the future
         hevm.warp(now + 5 days);
-        uint debt = pile.debt(loanId);
-        dai.mint(self, debt);
-        dai.approve(SHELF, uint(- 1));
-        uint preReserveBalance = dai.balanceOf(self);
 
+        // repay entire loan debt
+        uint debt = pile.debt(loanId);
         // repayment should reduce maker debt
         preMakerDebt = clerk.debt();
-        // repay debt
-        shelf.repay(loanId, debt);
+        repayLoan(loanId, debt);
         assertTrue(clerk.debt() < preMakerDebt);
     }
 
