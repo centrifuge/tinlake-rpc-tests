@@ -4,13 +4,14 @@ import "ds-test/test.sol";
 import "./addresses.sol";
 import "./interfaces.sol";
 import "lib/tinlake-title/src/title.sol";
+import "./assertions.sol";
 
 contract Hevm {
     function warp(uint256) public;
     function store(address, bytes32, bytes32) public;
 }
 
-contract TinlakeRPCTests is DSTest, TinlakeAddresses {
+contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     Hevm public hevm;
     RootLike root;
     IPoolAdmin admin;
@@ -29,20 +30,6 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
     ERC20Like drop;
 
     address self;
-    uint256 constant ONE = 10 ** 27;
-
-    function rdiv(uint x, uint y) public pure returns (uint z) {
-        require(y > 0, "division by zero");
-        z = safeAdd(safeMul(x, ONE), y / 2) / y;
-    }
-
-    function safeMul(uint x, uint y) public pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x, "safe-mul-failed");
-    }
-
-    function safeAdd(uint x, uint y) public pure returns (uint z) {
-        require((z = x + y) >= x, "safe-add-failed");
-    }
 
     function setUp() public {
         self = address(this);
@@ -66,10 +53,17 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
         // cheat: give testContract permissions on root contract by overriding storage
         // storage slot for permissions => keccak256(key, mapslot) (mapslot = 0)
        hevm.store(ROOT, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
+
+        // todo fetch current block timestamp from chain
+        // 21. April 2020
+        hevm.warp(1618991883);
     }
 
     function investTranches() public {
         // pre invest state
+
+        emit log_named_uint("block.timestamp", now);
+
         uint preReserveDaiBalance = dai.balanceOf(RESERVE);
         uint preMakerDebt = clerk.debt();
 
@@ -146,8 +140,8 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
         // get loan ceiling
         uint ceiling = (nav.ceiling(loanId));
         emit log_named_uint("ceiling", ceiling);
-//        // borrow
-//        shelf.borrow(loanId, ceiling);
+        // borrow
+        shelf.borrow(loanId, ceiling);
 //        // withdraw
 //        shelf.withdraw(loanId, ceiling, self);
 //
@@ -196,7 +190,4 @@ contract TinlakeRPCTests is DSTest, TinlakeAddresses {
         return 0;
     }
 
-    function assertEqWithTolarence(uint val1, uint val2) public {
-        assert((val1-2) <= val2 || val2 <= (val1+2));
-    }
 }
