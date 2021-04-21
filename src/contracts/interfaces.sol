@@ -50,10 +50,13 @@ contract IPile  {
 
 interface IReserve {
     function currencyAvailable() external returns(uint);
+    function totalBalance() external returns(uint);
 }
 
 interface IClerk {
     function debt() external view returns(uint);
+    function creditline() external view returns(uint);
+    function raise(uint amount) external;
 }
 
 interface ICoordinator {
