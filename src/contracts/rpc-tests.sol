@@ -1,6 +1,6 @@
 pragma solidity >=0.5.15 <0.6.0;
 
-import "lib/ds-test/src/test.sol";
+import "ds-test/test.sol";
 import "./addresses.sol";
 import "./interfaces.sol";
 import "lib/tinlake-title/src/title.sol";
