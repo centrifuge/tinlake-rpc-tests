@@ -8,6 +8,7 @@ import "./assertions.sol";
 
 contract Hevm {
     function warp(uint256) public;
+
     function store(address, bytes32, bytes32) public;
 }
 
@@ -52,7 +53,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
         // cheat: give testContract permissions on root contract by overriding storage
         // storage slot for permissions => keccak256(key, mapslot) (mapslot = 0)
-       hevm.store(ROOT, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
+        hevm.store(ROOT, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
 
         // todo fetch current block timestamp from chain
         // 21. April 2020
@@ -67,50 +68,57 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         uint preReserveDaiBalance = dai.balanceOf(RESERVE);
         uint preMakerDebt = clerk.debt();
 
-       // get admin super powers
-       root.relyContract(POOL_ADMIN, self);
-       // whitelist self for tin & drop
-       admin.relyAdmin(self);
-       admin.updateSeniorMember(self, uint(-1));
-       admin.updateJuniorMember(self, uint(-1));
+        // get admin super powers
+        root.relyContract(POOL_ADMIN, self);
+        // whitelist self for tin & drop
+        admin.relyAdmin(self);
+        admin.updateSeniorMember(self, uint(- 1));
+        admin.updateJuniorMember(self, uint(- 1));
 
         // get super powers on DAI contract
-       hevm.store(DAI, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
+        hevm.store(DAI, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
 
-       // mint DAI
-       uint maxInvest = (assessor.maxReserve() - assessor.totalBalance()) / 2; // make sure investment amount does not brek max reserve
-       dai.mint(self, maxInvest);
+        // mint DAI
+        uint maxInvest = (assessor.maxReserve() - assessor.totalBalance()) / 2;
+        // make sure investment amount does not brek max reserve
+        dai.mint(self, maxInvest);
 
-       uint seniorInvest = maxInvest / 2;
-       uint juniorInvest = maxInvest - seniorInvest;
+        uint seniorInvest = maxInvest / 2;
+        uint juniorInvest = maxInvest - seniorInvest;
 
-       // invest tranches
-       dai.approve(SENIOR_TRANCHE, seniorInvest); // invest senior
-       senior.supplyOrder(seniorInvest);
+        // invest tranches
+        dai.approve(SENIOR_TRANCHE, seniorInvest);
+        // invest senior
+        senior.supplyOrder(seniorInvest);
 
-       dai.approve(JUNIOR_TRANCHE, juniorInvest); // invest junior
-       junior.supplyOrder(juniorInvest);
+        dai.approve(JUNIOR_TRANCHE, juniorInvest);
+        // invest junior
+        junior.supplyOrder(juniorInvest);
 
-       // close epoch & disburse
-       hevm.warp(now + coordinator.challengeTime());
-       coordinator.closeEpoch();
-       senior.disburse();
-       junior.disburse();
+        // close epoch & disburse
+        hevm.warp(now + coordinator.challengeTime());
+        coordinator.closeEpoch();
+        senior.disburse();
+        junior.disburse();
 
-       // calc expected token balances for tin & drop
-       uint tinPrice = assessor.calcJuniorTokenPrice(nav.approximatedNAV(), 0);
-       uint dropPrice = assessor.calcSeniorTokenPrice(nav.approximatedNAV(), 0);
-       uint tinExpected = rdiv(juniorInvest, tinPrice);
-       uint dropExpected = rdiv(seniorInvest, dropPrice);
+        // calc expected token balances for tin & drop
+        uint tinPrice = assessor.calcJuniorTokenPrice(nav.approximatedNAV(), 0);
+        uint dropPrice = assessor.calcSeniorTokenPrice(nav.approximatedNAV(), 0);
+        uint tinExpected = rdiv(juniorInvest, tinPrice);
+        uint dropExpected = rdiv(seniorInvest, dropPrice);
 
-       // check correct tin & drop token received
-       assertEqWithTolarence(tin.balanceOf(self), tinExpected);
-       assertEqWithTolarence(drop.balanceOf(self), dropExpected);
+        // check correct tin & drop token received
+        assertEqTol(tin.balanceOf(self), tinExpected, "rpc#1");
+        assertEqTol(drop.balanceOf(self), dropExpected, "rpc#2");
 
-       uint wipeAmount = assertMakerDebtReduced(preMakerDebt, maxInvest); // calc wipe amount for maker
-       uint reserveIncrease = maxInvest - wipeAmount; // calc reserve increase
-       assertEqWithTolarence(assessor.totalBalance(), preReserveDaiBalance + reserveIncrease); // check reserve balance increased correctly
-       assertEqWithTolarence(preMakerDebt - wipeAmount, clerk.debt()); // check maker debt reduced correctly
+        uint wipeAmount = assertMakerDebtReduced(preMakerDebt, maxInvest);
+        // calc wipe amount for maker
+        uint reserveIncrease = maxInvest - wipeAmount;
+        // calc reserve increase
+        assertEqTol(assessor.totalBalance(), preReserveDaiBalance + reserveIncrease, "rpc#3");
+        // check reserve balance increased correctly
+        assertEqTol(preMakerDebt - wipeAmount, clerk.debt(), "rpc#4");
+        // check maker debt reduced correctly
     }
 
     function testLoanCycle() public {
@@ -129,10 +137,11 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         uint reserveBalance = assessor.totalBalance();
         emit log_named_uint("balance", reserveBalance);
         emit log_named_uint("available", reserve.currencyAvailable());
-        uint nftPrice = reserveBalance / 2; // make sure nft/loan value smaller then reserve balance
+        uint nftPrice = reserveBalance / 2;
+        // make sure nft/loan value smaller then reserve balance
         emit log_named_uint("price", nftPrice);
         nav.update(nftId, nftPrice, 0);
-        nav.file("maturityDate", nftId, uint(-1));
+        nav.file("maturityDate", nftId, uint(- 1));
 
         // lock nft
         registry.setApprovalForAll(SHELF, true);
@@ -142,21 +151,21 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         emit log_named_uint("ceiling", ceiling);
         // borrow
         shelf.borrow(loanId, ceiling);
-//        // withdraw
-//        shelf.withdraw(loanId, ceiling, self);
-//
-//        // assert currency received
-//        assertEq(dai.balanceOf(self), preDaiBalance + ceiling);
-//
-//        // warp
-//        // hevm.warp(now + 5 days);
-//        // uint debt = pile.debt(loanId);
-//        // dai.mint(debt, self);
-//        // uint preReserveBalance = dai.balanceOf(self);
-//        // approve currency
-//        // shelf.repay(loanId, debt);
-//        // assert reserve increase
-//        // assert maker repaid
+        //        // withdraw
+        //        shelf.withdraw(loanId, ceiling, self);
+        //
+        //        // assert currency received
+        //        assertEq(dai.balanceOf(self), preDaiBalance + ceiling);
+        //
+        //        // warp
+        //        // hevm.warp(now + 5 days);
+        //        // uint debt = pile.debt(loanId);
+        //        // dai.mint(debt, self);
+        //        // uint preReserveBalance = dai.balanceOf(self);
+        //        // approve currency
+        //        // shelf.repay(loanId, debt);
+        //        // assert reserve increase
+        //        // assert maker repaid
 
     }
 
