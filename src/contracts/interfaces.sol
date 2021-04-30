@@ -17,6 +17,7 @@ interface IAssessor {
     function totalBalance() external returns (uint);
     function calcJuniorTokenPrice(uint nav_, uint) external view returns(uint);
     function calcSeniorTokenPrice(uint nav_, uint) external view returns(uint);
+    function file(bytes32, uint) external;
 }
 
 interface INavFeed {

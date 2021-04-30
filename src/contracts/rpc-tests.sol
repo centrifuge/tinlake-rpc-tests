@@ -3,7 +3,7 @@ pragma solidity >=0.5.15 <0.6.0;
 import "ds-test/test.sol";
 import "./addresses.sol";
 import "./interfaces.sol";
-import "lib/tinlake-title/src/title.sol";
+import "tinlake-title/title.sol";
 import {Assertions} from "tinlake/test/system/assertions.sol";
 import {Shelf} from "tinlake/borrower/shelf.sol";
 import {Pile} from "tinlake/borrower/pile.sol";
@@ -35,6 +35,10 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     address self;
 
     function setUp() public {
+        initRPC();
+    }
+
+    function initRPC() public {
         self = address(this);
         hevm = Hevm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
         root = RootLike(ROOT);
@@ -64,10 +68,8 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
     function investTranches() public {
         // pre invest state
-
-        emit log_named_uint("block.timestamp", now);
-
         uint preReserveDaiBalance = dai.balanceOf(RESERVE);
+
         uint preMakerDebt = clerk.debt();
 
         // get admin super powers
@@ -160,6 +162,9 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     }
 
     function testLoanCycleWithMaker() public {
+        root.relyContract(address(assessor), address(this));
+        assessor.file("maxReserve", 1000000000000 * 1 ether);
+
         investTranches();
 
         // issue nft
