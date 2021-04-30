@@ -83,3 +83,8 @@ interface ERC20Like {
 interface IRegistry {
    function issue(address) external returns (uint);
 }
+
+interface IMemberList {
+    function updateMember(address usr, uint256 validUntil) external;
+    function updateMembers(address[] calldata users, uint256 validUntil) external;
+}
