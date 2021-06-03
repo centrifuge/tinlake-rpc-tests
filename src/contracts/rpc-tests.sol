@@ -8,7 +8,6 @@ import {Assertions} from "./assertions.sol";
 
 contract Hevm {
     function warp(uint256) public;
-
     function store(address, bytes32, bytes32) public;
 }
 
