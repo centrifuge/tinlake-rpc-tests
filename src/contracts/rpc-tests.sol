@@ -14,23 +14,23 @@ contract Hevm {
 
 contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     Hevm public hevm;
-    RootLike root;
-    IPoolAdmin admin;
-    IAssessor assessor;
-    IOperator junior;
-    IOperator senior;
-    ICoordinator coordinator;
-    INavFeed nav;
-    IShelf shelf;
-    IPile pile;
-    IReserve reserve;
-    IClerk clerk;
+    T_RootLike root;
+    T_PoolAdmin admin;
+    T_Assessor assessor;
+    T_Operator junior;
+    T_Operator senior;
+    T_Coordinator coordinator;
+    T_NavFeed nav;
+    T_Shelf shelf;
+    T_Pile pile;
+    T_Reserve reserve;
+    T_Clerk clerk;
     Title registry;
-    ERC20Like dai;
-    ERC20Like tin;
-    ERC20Like drop;
-    ITranche seniorTranche;
-    ITranche juniorTranche;
+    T_ERC20 dai;
+    T_ERC20 tin;
+    T_ERC20 drop;
+    T_Tranche seniorTranche;
+    T_Tranche juniorTranche;
 
     address self;
 
@@ -41,22 +41,22 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     function initRPC() public {
         self = address(this);
         hevm = Hevm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
-        root = RootLike(ROOT_CONTRACT);
-        admin = IPoolAdmin(POOL_ADMIN);
-        nav = INavFeed(FEED);
-        shelf = IShelf(SHELF);
-        pile = IPile(PILE);
-        assessor = IAssessor(ASSESSOR);
-        senior = IOperator(SENIOR_OPERATOR);
-        junior = IOperator(JUNIOR_OPERATOR);
-        seniorTranche = ITranche(SENIOR_TRANCHE);
-        juniorTranche = ITranche(JUNIOR_TRANCHE);
-        coordinator = ICoordinator(COORDINATOR);
-        reserve = IReserve(RESERVE);
-        clerk = IClerk(CLERK);
-        tin = ERC20Like(JUNIOR_TOKEN);
-        drop = ERC20Like(SENIOR_TOKEN);
-        dai = ERC20Like(TINLAKE_CURRENCY);
+        root = T_RootLike(ROOT_CONTRACT);
+        admin = T_PoolAdmin(POOL_ADMIN);
+        nav = T_NavFeed(FEED);
+        shelf = T_Shelf(SHELF);
+        pile = T_Pile(PILE);
+        assessor = T_Assessor(ASSESSOR);
+        senior = T_Operator(SENIOR_OPERATOR);
+        junior = T_Operator(JUNIOR_OPERATOR);
+        seniorTranche = T_Tranche(SENIOR_TRANCHE);
+        juniorTranche = T_Tranche(JUNIOR_TRANCHE);
+        coordinator = T_Coordinator(COORDINATOR);
+        reserve = T_Reserve(RESERVE);
+        clerk = T_Clerk(CLERK);
+        tin = T_ERC20(JUNIOR_TOKEN);
+        drop = T_ERC20(SENIOR_TOKEN);
+        dai = T_ERC20(TINLAKE_CURRENCY);
         registry = new Title("TEST", "TEST");
 
         // cheat: give testContract permissions on root contract by overriding storage
@@ -229,12 +229,12 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
     // helper
     function assertHasPermissions(address con, address ward) public {
-        uint perm = IAuth(con).wards(ward);
+        uint perm = TAuth(con).wards(ward);
         assertEq(perm, 1);
     }
 
     function assertHasNoPermissions(address con, address ward) public {
-        uint perm = IAuth(con).wards(ward);
+        uint perm = TAuth(con).wards(ward);
         assertEq(perm, 0);
     }
 
