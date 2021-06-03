@@ -64,6 +64,8 @@ interface ICoordinator {
     function closeEpoch() external;
     function executeEpoch() external;
     function challengeTime() external returns (uint);
+    function epochSeniorTokenPrice() external returns (uint);
+    function epochJuniorTokenPrice() external returns (uint);
 }
 
 interface RootLike {
