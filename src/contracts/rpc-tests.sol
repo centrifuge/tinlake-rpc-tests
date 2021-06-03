@@ -4,9 +4,7 @@ import "ds-test/test.sol";
 import "./addresses.sol";
 import "./interfaces.sol";
 import "tinlake-title/title.sol";
-import {Assertions} from "tinlake/test/system/assertions.sol";
-import {Shelf} from "tinlake/borrower/shelf.sol";
-import {Pile} from "tinlake/borrower/pile.sol";
+import {Assertions} from "./assertions.sol";
 
 contract Hevm {
     function warp(uint256) public;
@@ -23,8 +21,8 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     IOperator senior;
     ICoordinator coordinator;
     INavFeed nav;
-    Shelf shelf;
-    Pile pile;
+    IShelf shelf;
+    IPile pile;
     IReserve reserve;
     IClerk clerk;
     Title registry;
@@ -41,11 +39,11 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     function initRPC() public {
         self = address(this);
         hevm = Hevm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
-        root = RootLike(ROOT);
+        root = RootLike(ROOT_CONTRACT);
         admin = IPoolAdmin(POOL_ADMIN);
         nav = INavFeed(FEED);
-        shelf = Shelf(SHELF);
-        pile = Pile(PILE);
+        shelf = IShelf(SHELF);
+        pile = IPile(PILE);
         assessor = IAssessor(ASSESSOR);
         senior = IOperator(SENIOR_OPERATOR);
         junior = IOperator(JUNIOR_OPERATOR);
@@ -54,12 +52,12 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         clerk = IClerk(CLERK);
         tin = ERC20Like(JUNIOR_TOKEN);
         drop = ERC20Like(SENIOR_TOKEN);
-        dai = ERC20Like(DAI);
+        dai = ERC20Like(TINLAKE_CURRENCY);
         registry = new Title("TEST", "TEST");
 
         // cheat: give testContract permissions on root contract by overriding storage
         // storage slot for permissions => keccak256(key, mapslot) (mapslot = 0)
-        hevm.store(ROOT, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
+        hevm.store(ROOT_CONTRACT, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
 
         // todo fetch current block timestamp from chain
         // 21. April 2020
@@ -80,7 +78,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         admin.updateJuniorMember(self, uint(- 1));
 
         // get super powers on DAI contract
-        hevm.store(DAI, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
+        hevm.store(TINLAKE_CURRENCY, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
 
         // mint DAI
         uint maxInvest = (assessor.maxReserve() - assessor.totalBalance()) / 2;
