@@ -29,6 +29,8 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     ERC20Like dai;
     ERC20Like tin;
     ERC20Like drop;
+    ITranche seniorTranche;
+    ITranche juniorTranche;
 
     address self;
 
@@ -47,6 +49,8 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         assessor = IAssessor(ASSESSOR);
         senior = IOperator(SENIOR_OPERATOR);
         junior = IOperator(JUNIOR_OPERATOR);
+        seniorTranche = ITranche(SENIOR_TRANCHE);
+        juniorTranche = ITranche(JUNIOR_TRANCHE);
         coordinator = ICoordinator(COORDINATOR);
         reserve = IReserve(RESERVE);
         clerk = IClerk(CLERK);
@@ -59,9 +63,42 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // storage slot for permissions => keccak256(key, mapslot) (mapslot = 0)
         hevm.store(ROOT_CONTRACT, keccak256(abi.encode(self, uint(0))), bytes32(uint(1)));
 
-        // todo fetch current block timestamp from chain
-        // 21. April 2020
+
         hevm.warp(block.timestamp + 2 days);
+    }
+
+    function disburse(uint preMakerDebt, uint preReserveDaiBalance, uint seniorInvest, uint juniorInvest) public {
+        // close epoch & disburse
+        hevm.warp(now + coordinator.challengeTime());
+
+        uint lastEpochExecuted = coordinator.lastEpochExecuted();
+
+        senior.disburse();
+        junior.disburse();
+
+        (, uint seniorSupplyFulfill, uint seniorPrice) = seniorTranche.epochs(lastEpochExecuted);
+        (, uint juniorSupplyFulfill, uint juniorPrice) = juniorTranche.epochs(lastEpochExecuted);
+
+
+        // effective invested in this epoch
+        juniorInvest = rmul(juniorInvest, juniorSupplyFulfill);
+        seniorInvest = rmul(seniorInvest, seniorSupplyFulfill);
+
+        uint tinExpected = rdiv(juniorInvest, juniorPrice);
+        uint dropExpected = rdiv(seniorInvest, seniorPrice);
+
+        // check correct tin & drop token received
+        assertEqTol(tin.balanceOf(self), tinExpected, "rpc#1");
+        assertEqTol(drop.balanceOf(self), dropExpected, "rpc#2");
+
+        uint investAmount = safeAdd(seniorInvest, juniorInvest);
+
+        uint wipeAmount = assertMakerDebtReduced(preMakerDebt, investAmount);
+
+
+        assertEqTol(preMakerDebt - wipeAmount, clerk.debt(), "rpc#3");
+        // check maker debt reduced correctly
+
     }
 
     function investTranches() public {
@@ -70,7 +107,6 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
         uint preMakerDebt = clerk.debt();
 
-        emit log_named_address("pool admin", POOL_ADMIN);
         // get admin super powers
         root.relyContract(POOL_ADMIN, self);
         // whitelist self for tin & drop
@@ -87,6 +123,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         dai.mint(self, maxInvest);
 
         uint seniorInvest = maxInvest / 2;
+        // in Maker pools the minSeniorRatio is zero => more TIN always welcome
         uint juniorInvest = maxInvest - seniorInvest;
         // uint seniorInvest = 1 ether;
         // uint juniorInvest = 1 ether;
@@ -100,32 +137,13 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // invest junior
         junior.supplyOrder(juniorInvest);
 
-        // close epoch & disburse
-        hevm.warp(now + coordinator.challengeTime());
         coordinator.closeEpoch();
-        senior.disburse();
-        junior.disburse();
 
-        // calc expected token balances for tin & drop
-        uint tinPrice = coordinator.epochJuniorTokenPrice();
-        uint dropPrice = coordinator.epochSeniorTokenPrice();
-        uint tinExpected = rdiv(juniorInvest, tinPrice);
-        uint dropExpected = rdiv(seniorInvest, dropPrice);
+        // todo handle submission period case
+        assertTrue(coordinator.submissionPeriod()  == false);
 
-        // check correct tin & drop token received
-        assertEqTol(tin.balanceOf(self), tinExpected, "rpc#1");
-        assertEqTol(drop.balanceOf(self), dropExpected, "rpc#2");
-
-        uint wipeAmount = assertMakerDebtReduced(preMakerDebt, maxInvest);
-        // calc wipe amount for maker
-        uint reserveIncrease = maxInvest - wipeAmount;
-        // calc reserve increase
-        assertEqTol(assessor.totalBalance(), preReserveDaiBalance + reserveIncrease, "rpc#3");
-        // check reserve balance increased correctly
-        assertEqTol(preMakerDebt - wipeAmount, clerk.debt(), "rpc#4");
-        // check maker debt reduced correctly
+        disburse(preMakerDebt, preReserveDaiBalance, seniorInvest, juniorInvest);
     }
-
 
     function appraiseNFT(uint tokenId, uint nftPrice, uint maturityDate) public {
         root.relyContract(FEED, self);
@@ -220,13 +238,13 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         assertEq(perm, 0);
     }
 
-    function assertMakerDebtReduced(uint preDebt, uint investmentAmount) public returns (uint) {
+    function assertMakerDebtReduced(uint preDebt, uint investmentAmount) public returns (uint wipeAmount) {
         if (preDebt > 1) {
             if (preDebt > investmentAmount) {
                 assertEq(clerk.debt(), (preDebt - investmentAmount));
                 return investmentAmount;
             } else {
-                // assert(clerk.debt() <= 1);
+                assertTrue(clerk.debt() <= 1);
                 return preDebt;
             }
         }

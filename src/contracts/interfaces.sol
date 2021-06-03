@@ -60,12 +60,18 @@ interface IClerk {
     function raise(uint amount) external;
 }
 
+interface ITranche {
+    function epochs(uint epochID) external returns(uint redeemFulfill, uint supplyFulfill, uint tokenPrice);
+}
+
 interface ICoordinator {
     function closeEpoch() external;
     function executeEpoch() external;
+    function submissionPeriod() external returns(bool);
     function challengeTime() external returns (uint);
     function epochSeniorTokenPrice() external returns (uint);
     function epochJuniorTokenPrice() external returns (uint);
+    function lastEpochExecuted() external returns(uint);
 }
 
 interface RootLike {
