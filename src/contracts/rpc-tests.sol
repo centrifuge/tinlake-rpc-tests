@@ -1,14 +1,14 @@
-pragma solidity >=0.5.15 <0.6.0;
+pragma solidity >=0.7.0;
 
-import "ds-test/test.sol";
+import "../../lib/ds-test/src/test.sol";
 import "./addresses.sol";
 import "./interfaces.sol";
-import "tinlake-title/title.sol";
+import "../../lib/tinlake-title/src/title.sol";
 import {Assertions} from "./assertions.sol";
 
-contract Hevm {
-    function warp(uint256) public;
-    function store(address, bytes32, bytes32) public;
+interface Hevm {
+    function warp(uint256) external;
+    function store(address, bytes32, bytes32) external;
 }
 
 contract TinlakeRPCTests is Assertions, TinlakeAddresses {
@@ -68,7 +68,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
     function disburse(uint preMakerDebt, uint preReserveDaiBalance, uint seniorInvest, uint juniorInvest) public {
         // close epoch & disburse
-        hevm.warp(now + coordinator.challengeTime());
+        hevm.warp(block.timestamp + coordinator.challengeTime());
 
         uint lastEpochExecuted = coordinator.lastEpochExecuted();
 
@@ -128,11 +128,11 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // uint juniorInvest = 1 ether;
 
         // invest tranches
-        dai.approve(SENIOR_TRANCHE, seniorInvest);
+        dai.approve(SENIOR_TRANCHE, type(uint256).max);
         // invest senior
         senior.supplyOrder(seniorInvest);
 
-        dai.approve(JUNIOR_TRANCHE, juniorInvest);
+        dai.approve(JUNIOR_TRANCHE, type(uint256).max);
         // invest junior
         junior.supplyOrder(juniorInvest);
 
@@ -197,7 +197,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // appraise nft
         uint totalAvailable = assessor.totalBalance();
         uint nftPrice = totalAvailable * 2;
-        uint maturityDate = now + 2 weeks;
+        uint maturityDate = block.timestamp + 2 weeks;
         appraiseNFT(tokenId, nftPrice, maturityDate);
 
         // lock asset nft
@@ -216,7 +216,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         assertEqTol(clerk.debt(), preMakerDebt + (clerk.creditline() / 2) ,"clerk debt");
 
         // jump 5 days into the future
-        hevm.warp(now + 5 days);
+        hevm.warp(block.timestamp + 5 days);
 
         // repay entire loan debt
         uint debt = pile.debt(loanId);

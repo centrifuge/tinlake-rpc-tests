@@ -8,5 +8,5 @@ echo $ADDR_SOL
 
 node src/js/createAddresses.js $ADDR_SOL
 
-dapp --use solc:0.5.15 build --extract
+dapp --use solc:0.7.6 build --extract
 hevm dapp-test --rpc="$ETH_RPC_URL" --json-file=out/dapp.sol.json --verbose=1
