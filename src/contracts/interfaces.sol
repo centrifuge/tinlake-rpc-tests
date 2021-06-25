@@ -1,4 +1,4 @@
-pragma solidity >=0.5.15 <0.6.0;
+pragma solidity >=0.7.0;
 
 interface TAuth {
     function rely(address) external;
