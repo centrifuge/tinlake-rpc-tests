@@ -33,20 +33,20 @@ interface T_Operator {
     function disburse() external returns(uint payoutCurrencyAmount, uint payoutTokenAmount, uint remainingSupplyCurrency,  uint remainingRedeemToken);
 }
 
-contract T_Shelf {
+interface T_Shelf {
     function lock(uint loan) external;
     function unlock(uint loan) external;
-    function issue(address registry, uint token) public returns (uint loan);
+    function issue(address registry, uint token) external returns (uint loan);
     function close(uint loan) external;
     function borrow(uint loan, uint wad) external;
     function withdraw(uint loan, uint wad, address usr) external;
     function repay(uint loan, uint wad) external;
-    function shelf(uint loan) public returns(address registry,uint256 tokenId,uint price,uint principal, uint initial);
+    function shelf(uint loan) external returns(address registry,uint256 tokenId,uint price,uint principal, uint initial);
     function file(bytes32 what, uint loan, address registry, uint nft) external;
 }
 
-contract T_Pile  {
-    function debt(uint loan) public returns(uint);
+interface T_Pile  {
+    function debt(uint loan) external returns(uint);
 }
 
 interface T_Reserve {
