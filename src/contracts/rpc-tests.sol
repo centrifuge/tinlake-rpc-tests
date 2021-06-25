@@ -128,7 +128,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // uint juniorInvest = 1 ether;
 
         // invest tranches
-        dai.approve(SENIOR_TRANCHE, uint(-1));
+        dai.approve(SENIOR_TRANCHE, type(uint256).max);
         // invest senior
         senior.supplyOrder(seniorInvest);
 
