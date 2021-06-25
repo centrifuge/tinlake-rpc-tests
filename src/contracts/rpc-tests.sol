@@ -132,7 +132,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // invest senior
         senior.supplyOrder(seniorInvest);
 
-        dai.approve(JUNIOR_TRANCHE, uint(-1));
+        dai.approve(JUNIOR_TRANCHE, type(uint256).max);
         // invest junior
         junior.supplyOrder(juniorInvest);
 
