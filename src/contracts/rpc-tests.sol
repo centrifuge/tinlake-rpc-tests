@@ -66,7 +66,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         hevm.warp(block.timestamp + 2 days);
     }
 
-    function disburse(uint preMakerDebt, uint preReserveDaiBalance, uint seniorInvest, uint juniorInvest) public {
+    function disburse(uint preMakerDebt, uint, uint seniorInvest, uint juniorInvest) public {
         // close epoch & disburse
         hevm.warp(block.timestamp + coordinator.challengeTime());
 
@@ -171,7 +171,6 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
     function repayLoan(uint loanId, uint repayAmount) public {
         dai.mint(self, repayAmount);
         dai.approve(SHELF, uint(- 1));
-        uint preReserveBalance = dai.balanceOf(self);
         uint preDaiBalance = dai.balanceOf(self);
         // repay debt
         shelf.repay(loanId, repayAmount);
@@ -203,8 +202,6 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // lock asset nft
         registry.setApprovalForAll(SHELF, true);
         shelf.lock(loanId);
-        // get loan ceiling
-        uint ceiling = (nav.ceiling(loanId));
 
         // borrow loan with half of the creditline
         uint borrowAmount = reserve.totalBalance() + clerk.creditline() / 2;
