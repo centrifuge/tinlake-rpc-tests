@@ -33,7 +33,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
     address self;
 
-    function setUp() public {
+    function setUp() public virtual {
         initRPC();
     }
 
