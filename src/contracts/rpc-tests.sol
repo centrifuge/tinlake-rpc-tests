@@ -179,7 +179,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         assertEq(dai.balanceOf(self), preDaiBalance - repayAmount);
     }
 
-    function testLoanCycleWithMaker() public {
+    function runLoanCycleWithMaker() public {
         root.relyContract(address(assessor), address(this));
         assessor.file("maxReserve", 1000000000000 * 1 ether);
 
