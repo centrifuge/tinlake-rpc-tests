@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 
 // The following addresses are from a json file called: ns2-mainnet.json
 
