@@ -67,7 +67,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         hevm.warp(block.timestamp + 2 days);
     }
 
-    function disburse(uint preMakerDebt, uint, uint seniorInvest, uint juniorInvest) public {
+    function disburse(uint preMakerDebt, uint, uint seniorInvest, uint juniorInvest, bool withMaker) public {
         // close epoch & disburse
         hevm.warp(block.timestamp + coordinator.challengeTime());
 
@@ -93,19 +93,20 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
 
         uint investAmount = safeAdd(seniorInvest, juniorInvest);
 
-        uint wipeAmount = assertMakerDebtReduced(preMakerDebt, investAmount);
-
-
-        assertEqTol(preMakerDebt - wipeAmount, clerk.debt(), "rpc#3");
-        // check maker debt reduced correctly
+        if (withMaker) {
+            uint wipeAmount = assertMakerDebtReduced(preMakerDebt, investAmount);
+            assertEqTol(preMakerDebt - wipeAmount, clerk.debt(), "rpc#3");
+            // check maker debt reduced correctly
+        }
 
     }
 
-    function investTranches() public {
+    function investTranches(bool withMaker) public {
         // pre invest state
         uint preReserveDaiBalance = dai.balanceOf(RESERVE);
 
-        uint preMakerDebt = clerk.debt();
+        uint preMakerDebt = 0;
+        if (withMaker) preMakerDebt = clerk.debt();
 
         // get admin super powers
         root.relyContract(POOL_ADMIN, self);
@@ -142,7 +143,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         // todo handle submission period case
         assertTrue(coordinator.submissionPeriod()  == false);
 
-        disburse(preMakerDebt, preReserveDaiBalance, seniorInvest, juniorInvest);
+        disburse(preMakerDebt, preReserveDaiBalance, seniorInvest, juniorInvest, withMaker);
     }
 
     function appraiseNFT(uint tokenId, uint nftPrice, uint maturityDate) public {
@@ -183,7 +184,7 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         root.relyContract(address(assessor), address(this));
         assessor.file("maxReserve", 1000000000000 * 1 ether);
 
-        investTranches();
+        investTranches(true);
 
         // issue nft
         uint tokenId = registry.issue(self);
@@ -222,6 +223,40 @@ contract TinlakeRPCTests is Assertions, TinlakeAddresses {
         preMakerDebt = clerk.debt();
         repayLoan(loanId, debt);
         assertTrue(clerk.debt() < preMakerDebt);
+    }
+
+    function runLoanCycleWithoutMaker() public {
+        root.relyContract(address(assessor), address(this));
+        assessor.file("maxReserve", 1000000000000 * 1 ether);
+
+        investTranches(false);
+
+        // issue nft
+        uint tokenId = registry.issue(self);
+        // issue loan
+        uint loanId = shelf.issue(address(registry), tokenId);
+
+        // appraise nft
+        uint totalAvailable = assessor.totalBalance();
+        uint nftPrice = totalAvailable * 2;
+        uint maturityDate = block.timestamp + 2 weeks;
+        appraiseNFT(tokenId, nftPrice, maturityDate);
+
+        // lock asset nft
+        registry.setApprovalForAll(SHELF, true);
+        shelf.lock(loanId);
+
+        // borrow loan with half of the creditline
+        uint borrowAmount = reserve.totalBalance();
+
+        borrowLoan(loanId, borrowAmount);
+
+        // jump 5 days into the future
+        hevm.warp(block.timestamp + 5 days);
+
+        // repay entire loan debt
+        uint debt = pile.debt(loanId);
+        repayLoan(loanId, debt);
     }
 
     // helper
